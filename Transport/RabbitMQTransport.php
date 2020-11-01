@@ -9,8 +9,10 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Messenger\Bridge\Amqp\Transport;
+namespace Symfony\Component\Messenger\Bridge\RabbitMQ\Transport;
 
+use Symfony\Component\Messenger\Bridge\Amqp\Transport\AmqpSender;
+use Symfony\Component\Messenger\Bridge\Amqp\Transport\Connection;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use Symfony\Component\Messenger\Transport\Serialization\PhpSerializer;
@@ -21,7 +23,7 @@ use Symfony\Component\Messenger\Transport\TransportInterface;
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
-class AmqpTransport implements TransportInterface, SetupableTransportInterface, MessageCountAwareInterface
+class RabbitMQTransport implements TransportInterface, SetupableTransportInterface, MessageCountAwareInterface
 {
     private $serializer;
     private $connection;
@@ -82,9 +84,9 @@ class AmqpTransport implements TransportInterface, SetupableTransportInterface, 
         return ($this->receiver ?? $this->getReceiver())->getMessageCount();
     }
 
-    private function getReceiver(): AmqpReceiver
+    private function getReceiver(): RabbitMQReceiver
     {
-        return $this->receiver = new AmqpReceiver($this->connection, $this->serializer);
+        return $this->receiver = new RabbitMQReceiver($this->connection, $this->serializer);
     }
 
     private function getSender(): AmqpSender
@@ -92,4 +94,3 @@ class AmqpTransport implements TransportInterface, SetupableTransportInterface, 
         return $this->sender = new AmqpSender($this->connection, $this->serializer);
     }
 }
-class_alias(AmqpTransport::class, \Symfony\Component\Messenger\Transport\AmqpExt\AmqpTransport::class);

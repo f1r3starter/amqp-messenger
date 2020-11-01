@@ -9,8 +9,10 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Messenger\Bridge\Amqp\Transport;
+namespace Symfony\Component\Messenger\Bridge\RabbitMQ\Transport;
 
+use Symfony\Component\Messenger\Bridge\Amqp\Transport\AmqpReceivedStamp;
+use Symfony\Component\Messenger\Bridge\Amqp\Transport\Connection;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\LogicException;
 use Symfony\Component\Messenger\Exception\MessageDecodingFailedException;
@@ -25,10 +27,11 @@ use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
  *
  * @author Samuel Roze <samuel.roze@gmail.com>
  */
-class AmqpReceiver implements ReceiverInterface, MessageCountAwareInterface
+class RabbitMQReceiver implements ReceiverInterface, MessageCountAwareInterface
 {
     private $serializer;
     private $connection;
+    private $messages = [];
 
     public function __construct(Connection $connection, SerializerInterface $serializer = null)
     {
@@ -42,37 +45,51 @@ class AmqpReceiver implements ReceiverInterface, MessageCountAwareInterface
     public function get(): iterable
     {
         foreach ($this->connection->getQueueNames() as $queueName) {
-            yield from $this->getEnvelope($queueName);
+            $this->getEnvelope($queueName);
+            yield from $this->messages[$queueName];
         }
     }
 
-    private function getEnvelope(string $queueName): iterable
+    private function getEnvelope(string $queueName): void
     {
         try {
-            $amqpEnvelope = $this->connection->get($queueName);
+            $this->connection
+                ->queue($queueName)
+                ->consume(
+                    function (\AMQPEnvelope $amqpEnvelope) use ($queueName): void {
+                        $this->consume($amqpEnvelope, $queueName);
+                    }
+                );
         } catch (\AMQPException $exception) {
             throw new TransportException($exception->getMessage(), 0, $exception);
         }
+    }
 
-        if (null === $amqpEnvelope) {
-            return;
-        }
-
+    public function consume(\AMQPEnvelope $amqpEnvelope, string $queueName): void
+    {
         $body = $amqpEnvelope->getBody();
 
         try {
-            $envelope = $this->serializer->decode([
-                'body' => false === $body ? '' : $body, // workaround https://github.com/pdezwart/php-amqp/issues/351
-                'headers' => $amqpEnvelope->getHeaders(),
-            ]);
+            $this->messages[$queueName] = $this->serializer->decode(
+                [
+                    'body' => false === $body ? '' : $body,
+                    // workaround https://github.com/pdezwart/php-amqp/issues/351
+                    'headers' => array_merge(
+                        $amqpEnvelope->getHeaders(),
+                        [
+                            'type' => $amqpEnvelope->getType(),
+                            'content_type' => $amqpEnvelope->getContentType(),
+                            'app_id' => $amqpEnvelope->getAppId()
+                        ]
+                    ),
+                ]
+            )->with(new AmqpReceivedStamp($amqpEnvelope, $queueName));
         } catch (MessageDecodingFailedException $exception) {
             // invalid message of some type
             $this->rejectAmqpEnvelope($amqpEnvelope, $queueName);
 
             throw $exception;
         }
-
-        yield $envelope->with(new AmqpReceivedStamp($amqpEnvelope, $queueName));
     }
 
     /**
@@ -136,4 +153,3 @@ class AmqpReceiver implements ReceiverInterface, MessageCountAwareInterface
         return $amqpReceivedStamp;
     }
 }
-class_alias(AmqpReceiver::class, \Symfony\Component\Messenger\Transport\AmqpExt\AmqpReceiver::class);

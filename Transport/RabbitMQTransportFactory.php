@@ -9,8 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Messenger\Bridge\Amqp\Transport;
+namespace Symfony\Component\Messenger\Bridge\RabbitMQ\Transport;
 
+use Symfony\Component\Messenger\Bridge\Amqp\Transport\Connection;
 use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 use Symfony\Component\Messenger\Transport\TransportFactoryInterface;
 use Symfony\Component\Messenger\Transport\TransportInterface;
@@ -18,18 +19,17 @@ use Symfony\Component\Messenger\Transport\TransportInterface;
 /**
  * @author Samuel Roze <samuel.roze@gmail.com>
  */
-class AmqpTransportFactory implements TransportFactoryInterface
+class RabbitMQTransportFactory implements TransportFactoryInterface
 {
     public function createTransport(string $dsn, array $options, SerializerInterface $serializer): TransportInterface
     {
         unset($options['transport_name']);
 
-        return new AmqpTransport(Connection::fromDsn($dsn, $options), $serializer);
+        return new RabbitMQTransport(Connection::fromDsn($dsn, $options), $serializer);
     }
 
     public function supports(string $dsn, array $options): bool
     {
-        return 0 === strpos($dsn, 'amqp://') || 0 === strpos($dsn, 'amqps://');
+        return 0 === strpos($dsn, 'rabbitmq://') || 0 === strpos($dsn, 'rabbitmqs://');
     }
 }
-class_alias(AmqpTransportFactory::class, \Symfony\Component\Messenger\Transport\AmqpExt\AmqpTransportFactory::class);
