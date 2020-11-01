@@ -5,8 +5,7 @@
     "license": "MIT",
     "require": {
         "php": ">=7.2.5",
-        "symfony/messenger": "^5.1",
-        "symfony/amqp-messenger": "^5.1",
+        "symfony/messenger": "^4.4",
         "ext-amqp": "*"
     },
     "autoload": {
@@ -15,5 +14,6 @@
             "/Tests/"
         ]
     },
-    "minimum-stability": "dev"
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

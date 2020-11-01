@@ -11,8 +11,8 @@
 
 namespace Symfony\Component\Messenger\Bridge\RabbitMQ\Transport;
 
-use Symfony\Component\Messenger\Bridge\Amqp\Transport\AmqpReceivedStamp;
-use Symfony\Component\Messenger\Bridge\Amqp\Transport\Connection;
+use Symfony\Component\Messenger\Transport\AmqpExt\AmqpReceivedStamp;
+use Symfony\Component\Messenger\Transport\AmqpExt\Connection;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Exception\LogicException;
 use Symfony\Component\Messenger\Exception\MessageDecodingFailedException;

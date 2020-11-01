@@ -11,8 +11,8 @@
 
 namespace Symfony\Component\Messenger\Bridge\RabbitMQ\Transport;
 
-use Symfony\Component\Messenger\Bridge\Amqp\Transport\AmqpSender;
-use Symfony\Component\Messenger\Bridge\Amqp\Transport\Connection;
+use Symfony\Component\Messenger\Transport\AmqpExt\AmqpSender;
+use Symfony\Component\Messenger\Transport\AmqpExt\Connection;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use Symfony\Component\Messenger\Transport\Serialization\PhpSerializer;
