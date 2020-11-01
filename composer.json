@@ -9,7 +9,7 @@
         "ext-amqp": "*"
     },
     "autoload": {
-        "psr-4": { "Symfony\\Component\\Messenger\\Bridge\\RabbitMQ\\": "" },
+        "psr-4": { "Symfony\\Component\\Messenger\\Transport\\RabbitMQ\\": "" },
         "exclude-from-classmap": [
             "/Tests/"
         ]
