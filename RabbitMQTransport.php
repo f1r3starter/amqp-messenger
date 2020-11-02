@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Component\Messenger\Bridge\RabbitMQ\Transport;
+namespace Symfony\Component\Messenger\Transport\RabbitMQ;
 
 use Symfony\Component\Messenger\Transport\AmqpExt\AmqpSender;
 use Symfony\Component\Messenger\Transport\AmqpExt\Connection;
