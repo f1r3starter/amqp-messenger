@@ -46,7 +46,8 @@ class RabbitMQReceiver implements ReceiverInterface, MessageCountAwareInterface
     {
         foreach ($this->connection->getQueueNames() as $queueName) {
             $this->getEnvelope($queueName);
-            yield from $this->messages[$queueName];
+            yield from $this->messages[$queueName] ?? [];
+            unset($this->messages[$queueName]);
         }
     }
 
@@ -55,22 +56,19 @@ class RabbitMQReceiver implements ReceiverInterface, MessageCountAwareInterface
         try {
             $this->connection
                 ->queue($queueName)
-                ->consume(
-                    function (\AMQPEnvelope $amqpEnvelope) use ($queueName): void {
-                        $this->consume($amqpEnvelope, $queueName);
-                    }
-                );
+                ->consume([$this, 'consume'], AMQP_AUTOACK & AMQP_NOPARAM)
+            ;
         } catch (\AMQPException $exception) {
             throw new TransportException($exception->getMessage(), 0, $exception);
         }
     }
 
-    public function consume(\AMQPEnvelope $amqpEnvelope, string $queueName): void
+    public function consume(\AMQPEnvelope $amqpEnvelope, \AMQPQueue $queue): bool
     {
         $body = $amqpEnvelope->getBody();
 
         try {
-            $this->messages[$queueName] = $this->serializer->decode(
+            $this->messages[$queue->getName()][] = $this->serializer->decode(
                 [
                     'body' => false === $body ? '' : $body,
                     // workaround https://github.com/pdezwart/php-amqp/issues/351
@@ -83,13 +81,15 @@ class RabbitMQReceiver implements ReceiverInterface, MessageCountAwareInterface
                         ]
                     ),
                 ]
-            )->with(new AmqpReceivedStamp($amqpEnvelope, $queueName));
+            )->with(new AmqpReceivedStamp($amqpEnvelope, $queue->getName()));
         } catch (MessageDecodingFailedException $exception) {
             // invalid message of some type
-            $this->rejectAmqpEnvelope($amqpEnvelope, $queueName);
+            $this->rejectAmqpEnvelope($amqpEnvelope, $queue->getName());
 
             throw $exception;
         }
+
+        return false;
     }
 
     /**
