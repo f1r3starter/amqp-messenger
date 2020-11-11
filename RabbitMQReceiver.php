@@ -32,6 +32,7 @@ class RabbitMQReceiver implements ReceiverInterface, MessageCountAwareInterface
     private $serializer;
     private $connection;
     private $messages = [];
+    private $hasConsumers = [];
 
     public function __construct(Connection $connection, SerializerInterface $serializer = null)
     {
@@ -47,16 +48,18 @@ class RabbitMQReceiver implements ReceiverInterface, MessageCountAwareInterface
         foreach ($this->connection->getQueueNames() as $queueName) {
             $this->getEnvelope($queueName);
             yield from $this->messages[$queueName] ?? [];
-            unset($this->messages[$queueName]);
+            $this->hasConsumers[$queueName] = true;
+            $this->messages[$queueName] = [];
         }
     }
 
     private function getEnvelope(string $queueName): void
     {
         try {
+            $flags = ($this->hasConsumers[$queueName] ?? null) ? AMQP_JUST_CONSUME : AMQP_NOPARAM;
             $this->connection
                 ->queue($queueName)
-                ->consume([$this, 'consume'], AMQP_AUTOACK & AMQP_NOPARAM)
+                ->consume([$this, 'consume'], $flags)
             ;
         } catch (\AMQPException $exception) {
             throw new TransportException($exception->getMessage(), 0, $exception);
